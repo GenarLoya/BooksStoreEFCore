@@ -1,58 +1,39 @@
-using BookApi.Data;
+using BookApi.Src.Common;
 using BookApi.Src.Domain.Book.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BookApi.Src.Domain.Book;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BookController : ControllerBase
+public class BookController(IBookService service) : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly IBookService _service = service;
 
-    public BookController(AppDbContext context)
-    {
-        _context = context;
-    }
-
-    // GET: api/Book
+    // GET: api/Book?page=1&pageSize=10
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
+    public async Task<ActionResult<PagedResult<BookModel>>> GetBooks(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var books = await _context.Books.ToListAsync();
-        return Ok(books);
+        var result = await _service.GetPagedAsync(page, pageSize);
+        return Ok(result);
     }
 
     // GET: api/Book/5
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Book>> GetBook(int id)
+    public async Task<ActionResult<BookModel>> GetBook(int id)
     {
-        var book = await _context.Books.FindAsync(id);
-
-        if (book is null)
-        {
-            return NotFound();
-        }
-
+        var book = await _service.GetByIdAsync(id);
+        if (book is null) return NotFound();
         return Ok(book);
     }
 
     // POST: api/Book
     [HttpPost]
-    public async Task<ActionResult<Book>> CreateBook(CreateBookDto dto)
+    public async Task<ActionResult<BookModel>> CreateBook(CreateBookDto dto)
     {
-        var book = new Book
-        {
-            Title = dto.Title,
-            Author = dto.Author,
-            Year = dto.Year,
-            Price = dto.Price,
-        };
-
-        _context.Books.Add(book);
-        await _context.SaveChangesAsync();
-
+        var book = await _service.CreateAsync(dto);
         return CreatedAtAction(nameof(GetBook), new { id = book.Id }, book);
     }
 
@@ -60,20 +41,8 @@ public class BookController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateBook(int id, UpdateBookDto dto)
     {
-        var book = await _context.Books.FindAsync(id);
-
-        if (book is null)
-        {
-            return NotFound();
-        }
-
-        book.Title = dto.Title;
-        book.Author = dto.Author;
-        book.Year = dto.Year;
-        book.Price = dto.Price;
-
-        await _context.SaveChangesAsync();
-
+        var updated = await _service.UpdateAsync(id, dto);
+        if (!updated) return NotFound();
         return NoContent();
     }
 
@@ -81,16 +50,8 @@ public class BookController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteBook(int id)
     {
-        var book = await _context.Books.FindAsync(id);
-
-        if (book is null)
-        {
-            return NotFound();
-        }
-
-        _context.Books.Remove(book);
-        await _context.SaveChangesAsync();
-
+        var deleted = await _service.DeleteAsync(id);
+        if (!deleted) return NotFound();
         return NoContent();
     }
 }

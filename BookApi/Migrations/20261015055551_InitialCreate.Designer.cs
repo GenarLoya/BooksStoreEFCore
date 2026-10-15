@@ -19,7 +19,7 @@ namespace BookApi.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
 
-            modelBuilder.Entity("BookApi.Models.Book", b =>
+            modelBuilder.Entity("BookApi.Src.Domain.Book.BookModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
